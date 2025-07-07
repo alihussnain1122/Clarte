@@ -1,45 +1,70 @@
 import React from 'react';
 import { Eye, Heart, ShoppingBag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../contexts/CartContext';
+import { useToast } from '../contexts/ToastContext';
 
 const FeaturedProducts = () => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { showSuccess } = useToast();
+
   // Sample skincare product data
   const products = [
     {
       id: 1,
       name: "Radiance Renewal Serum",
-      price: "₹2,899",
-      originalPrice: "₹3,299",
+      price: 28.99,
+      originalPrice: 32.99,
       image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop&crop=center",
       category: "Serums",
       isNew: true,
-      description: "Vitamin C enriched brightening serum"
+      description: "Vitamin C enriched brightening serum",
+      rating: 4.5,
+      reviews: 89
     },
     {
       id: 2,
       name: "Gentle Cleansing Balm",
-      price: "₹1,999",
+      price: 19.99,
       image: "https://images.unsplash.com/photo-1570554886111-e80fcca6a029?w=400&h=400&fit=crop&crop=center",
       category: "Cleansers",
-      description: "Nourishing oil-based cleanser"
+      description: "Nourishing oil-based cleanser",
+      rating: 4.3,
+      reviews: 76
     },
     {
       id: 3,
       name: "Hydrating Rose Mist",
-      price: "₹1,599",
+      price: 15.99,
       image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&crop=center",
       category: "Toners",
-      description: "Refreshing rose water toner"
+      description: "Refreshing rose water toner",
+      rating: 4.2,
+      reviews: 54
     },
     {
       id: 4,
       name: "Luxe Night Cream",
-      price: "₹4,299",
+      price: 42.99,
       image: "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=400&h=400&fit=crop&crop=center",
       category: "Moisturizers",
       isBestseller: true,
-      description: "Rich anti-aging night treatment"
+      description: "Rich anti-aging night treatment",
+      rating: 4.7,
+      reviews: 132
     },
   ];
+
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  const handleAddToCart = (product, e) => {
+    e.stopPropagation();
+    addToCart(product);
+    showSuccess(`Added ${product.name} to cart!`);
+  };
 
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#FCFBF7' }}>
@@ -60,7 +85,8 @@ const FeaturedProducts = () => {
           {products.map((product) => (
             <div 
               key={product.id} 
-              className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2"
+              className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer"
+              onClick={() => handleProductClick(product.id)}
             >
               {/* Badges */}
               <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -86,10 +112,19 @@ const FeaturedProducts = () => {
                 
                 {/* Overlay Actions */}
                 <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-                  <button className="p-3 bg-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200">
+                  <button 
+                    className="p-3 bg-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProductClick(product.id);
+                    }}
+                  >
                     <Eye size={18} style={{ color: '#333333' }} />
                   </button>
-                  <button className="p-3 bg-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200">
+                  <button 
+                    className="p-3 bg-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Heart size={18} style={{ color: '#333333' }} />
                   </button>
                 </div>
@@ -110,11 +145,11 @@ const FeaturedProducts = () => {
                 {/* Price */}
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-xl font-bold" style={{ color: '#333333' }}>
-                    {product.price}
+                    ${product.price}
                   </span>
                   {product.originalPrice && (
                     <span className="text-sm line-through" style={{ color: '#7D6A58' }}>
-                      {product.originalPrice}
+                      ${product.originalPrice}
                     </span>
                   )}
                 </div>
@@ -125,6 +160,7 @@ const FeaturedProducts = () => {
                   style={{ backgroundColor: '#DAB6A2' }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#C59A88'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = '#DAB6A2'}
+                  onClick={(e) => handleAddToCart(product, e)}
                 >
                   <ShoppingBag size={18} />
                   Add to Cart
@@ -151,6 +187,7 @@ const FeaturedProducts = () => {
               e.target.style.backgroundColor = 'transparent';
               e.target.style.color = '#C1A875';
             }}
+            onClick={() => navigate('/shop')}
           >
             View All Products
           </button>

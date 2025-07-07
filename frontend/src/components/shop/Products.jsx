@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Heart, Filter, Grid, List } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import FilterSidebar from './FiltersSidebar';
 import { productService } from '/src/services/productService';
+import { useCart } from '/src/contexts/CartContext';
+import { useToast } from '/src/contexts/ToastContext';
+import { useFavorites } from '/src/contexts/FavoritesContext';
 
 const Products = () => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { showSuccess } = useToast();
+  const { toggleFavorite, isFavorite } = useFavorites();
+  
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('featured');
@@ -125,98 +134,137 @@ const Products = () => {
   };
 
   // Product Card Component
-  const ProductCard = ({ product }) => (
-    <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-gray-100">
-      {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
-        />
-        
-        {/* Favorite Button */}
-        <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white hover:text-red-500">
-          <Heart size={18} className="transition-all duration-300" />
-        </button>
+  const ProductCard = ({ product }) => {
+    const handleProductClick = () => {
+      navigate(`/product/${product.id}`);
+    };
 
-        {/* Category Badge */}
-        <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-white/20 capitalize">
-            {product.category}
-          </span>
+    const handleAddToCart = (e) => {
+      e.stopPropagation(); // Prevent navigation when clicking add to cart
+      addToCart(product);
+      showSuccess(`Added ${product.name} to cart!`);
+    };
+
+    const handleToggleFavorite = (e) => {
+      e.stopPropagation(); // Prevent navigation when clicking favorite
+      toggleFavorite(product);
+      const isCurrentlyFavorite = isFavorite(product.id);
+      showSuccess(
+        isCurrentlyFavorite 
+          ? `Removed ${product.name} from favorites!`
+          : `Added ${product.name} to favorites!`
+      );
+    };
+
+    return (
+      <div 
+        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-gray-100 cursor-pointer"
+        onClick={handleProductClick}
+      >
+        {/* Image Container */}
+        <div className="relative aspect-square overflow-hidden bg-gray-50">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+          />
+          
+          {/* Favorite Button */}
+          <button 
+            className={`absolute top-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white ${
+              isFavorite(product.id) 
+                ? 'bg-red-50 text-red-500 border-red-200' 
+                : 'bg-white/80 hover:text-red-500'
+            }`}
+            onClick={handleToggleFavorite}
+          >
+            <Heart 
+              size={18} 
+              className={`transition-all duration-300 ${
+                isFavorite(product.id) ? 'fill-current' : ''
+              }`} 
+            />
+          </button>
+
+          {/* Category Badge */}
+          <div className="absolute top-4 left-4">
+            <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-white/20 capitalize">
+              {product.category}
+            </span>
+          </div>
+
+          {/* Quick View Button */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <button className="px-6 py-3 bg-white/90 backdrop-blur-sm rounded-xl font-medium text-gray-800 hover:bg-white transition-all duration-300">
+              View Details
+            </button>
+          </div>
         </div>
 
-        {/* Quick View Button */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <button className="px-6 py-3 bg-white/90 backdrop-blur-sm rounded-xl font-medium text-gray-800 hover:bg-white transition-all duration-300">
-            Quick View
+        {/* Product Info */}
+        <div className="p-6">
+          {/* Rating */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  size={14}
+                  className={i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-600">
+              {product.rating} ({product.reviews})
+            </span>
+          </div>
+
+          {/* Product Name */}
+          <h3 
+            className="text-lg font-semibold mb-2 line-clamp-2"
+            style={{ color: '#333333', fontFamily: 'Inter, sans-serif' }}
+          >
+            {product.name}
+          </h3>
+
+          {/* Description */}
+          <p 
+            className="text-sm mb-4 line-clamp-2"
+            style={{ color: '#7D6A58' }}
+          >
+            {product.description}
+          </p>
+
+          {/* Price */}
+          <div className="flex items-center gap-2 mb-4">
+            <span 
+              className="text-xl font-bold"
+              style={{ color: '#C1A875' }}
+            >
+              ${product.price}
+            </span>
+            {product.originalPrice && (
+              <span className="text-sm text-gray-500 line-through">
+                ${product.originalPrice}
+              </span>
+            )}
+          </div>
+
+          {/* Add to Cart Button */}
+          <button 
+            onClick={handleAddToCart}
+            className="w-full py-3 px-4 rounded-xl font-medium transition-all hover:shadow-md hover:bg-opacity-90"
+            style={{ 
+              backgroundColor: '#C1A875', 
+              color: 'white' 
+            }}
+          >
+            Add to Cart
           </button>
         </div>
       </div>
-
-      {/* Product Info */}
-      <div className="p-6">
-        {/* Rating */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={14}
-                className={i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-gray-600">
-            {product.rating} ({product.reviews})
-          </span>
-        </div>
-
-        {/* Product Name */}
-        <h3 
-          className="text-lg font-semibold mb-2 line-clamp-2"
-          style={{ color: '#333333', fontFamily: 'Inter, sans-serif' }}
-        >
-          {product.name}
-        </h3>
-
-        {/* Description */}
-        <p 
-          className="text-sm mb-4 line-clamp-2"
-          style={{ color: '#7D6A58' }}
-        >
-          {product.description}
-        </p>
-
-        {/* Price */}
-        <div className="flex items-center gap-2 mb-4">
-          <span 
-            className="text-xl font-bold"
-            style={{ color: '#C1A875' }}
-          >
-            ${product.price}
-          </span>
-          {product.originalPrice && (
-            <span className="text-sm text-gray-500 line-through">
-              ${product.originalPrice}
-            </span>
-          )}
-        </div>
-
-        {/* Add to Cart Button */}
-        <button 
-          className="w-full py-3 px-4 rounded-xl font-medium transition-all hover:shadow-md hover:bg-opacity-90"
-          style={{ 
-            backgroundColor: '#C1A875', 
-            color: 'white' 
-          }}
-        >
-          Add to Cart
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="relative">
